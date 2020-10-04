@@ -1,42 +1,40 @@
-pipeline {
+pipeline{
+    /* A Declarative Pipeline/
     agent any
 
-    parameters {
-         string(name: 'tomcat_dev', defaultValue: '35.166.210.154', description: 'Staging Server')
-         string(name: 'tomcat_prod', defaultValue: '34.209.233.6', description: 'Production Server')
-    }
-
-    triggers {
-         pollSCM('* * * * *')
-     }
-
-stages{
+    stages{
         stage('Build'){
-            steps {
+            steps{
                 sh 'mvn clean package'
             }
-            post {
+            post{
                 success {
-                    echo 'Now Archiving...'
-                    archiveArtifacts artifacts: '**/target/*.war'
+                    echo 'Now Archiving'
+                    archiveArtifacts artifacts '**/targeet/*.war'
                 }
             }
         }
+        stage('Deploy to staging'){
+            steps{
+                build job:deploy-to-staging
+            }
+        } 
 
-        stage ('Deployments'){
-            parallel{
-                stage ('Deploy to Staging'){
-                    steps {
-                        sh "scp -i /home/jenkins/tomcat-demo.pem **/target/*.war ec2-user@${params.tomcat_dev}:/var/lib/tomcat7/webapps"
-                    }
+        stage('Deploy to Production'){
+            steps{
+                timeout(time:5, unit: 'DAYS'){
+                    input message : "Approve PROD Deployment?"
                 }
-
-                stage ("Deploy to Production"){
-                    steps {
-                        sh "scp -i /home/jenkins/tomcat-demo.pem **/target/*.war ec2-user@${params.tomcat_prod}:/var/lib/tomcat7/webapps"
-                    }
+                build job:deploy-to-staging
+            }
+            post{
+                success {
+                    echo "Code deployed to production"
+                }
+                failure{
+                    echo "Deployment failed"
                 }
             }
-        }
+        }               
     }
 }
