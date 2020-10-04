@@ -1,5 +1,4 @@
 pipeline{
-    /* A Declarative Pipeline/
     agent any
 
     stages{
